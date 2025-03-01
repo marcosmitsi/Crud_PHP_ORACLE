@@ -21,7 +21,7 @@ if (!$conn) {
 }
 
 // Obtém o próximo ID corretamente
-$sql_id = "SELECT MAX(ID) AS next FROM PESSOA"; // Alterado para a tabela correta
+$sql_id = "SELECT MAX(ID) AS next FROM PESSOA"; 
 $result = oci_parse($conn, $sql_id);
 
 if (!oci_execute($result)) {

@@ -1,6 +1,6 @@
 <?php
 
-function lista_combo_cidade()
+function lista_combo_cidade($id_cidade = null)
 {
     $user = "system";
     $password = "243156";
@@ -47,7 +47,8 @@ function lista_combo_cidade()
            
            $id = $row["ID"];
            $nome = $row["NOME"];
-           $output .= "<option value={$id}> $nome </option>";
+           $check = ($id == $id_cidade) ? 'selected=1' : '';
+           $output .= "<option {$check} value={$id}> $nome </option>";
         }
 
         
