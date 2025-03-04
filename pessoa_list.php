@@ -46,7 +46,30 @@
             {
                 //echo "Conexão bem-sucedida!<br>";
             }
-            $sql = "SELECT * FROM PESSOA";
+
+            if (!empty($_GET['action']) && $_GET['action'] == 'delete') {
+                $id = (int) $_GET['id'];
+                $sql = "DELETE FROM PESSOA WHERE id = :id";
+            
+                
+                $stmt = oci_parse($conn, $sql); //Prepara a query para execução.
+            
+                oci_bind_by_name($stmt, ':id', $id); //Associa o valor id na query (segurança contra SQL Injection).
+            
+                // Executa a query no banco.
+                if (oci_execute($stmt)) {
+                    oci_commit($conn); // Confirma a exclusão
+                    echo "<script>alert('Registro excluído com sucesso!');</script>";
+                    echo "<script>window.location='pessoa_list.php';</script>"; // Após excluir, a página recarrega para refletir a mudança.
+                } else {
+                    $e = oci_error($stmt);
+                    echo "Erro ao excluir registro: " . $e['message'];
+                }
+            }
+            
+
+
+            $sql = "SELECT * FROM PESSOA ORDER BY id";
             $result = oci_parse($conn, $sql);
             
             if (!oci_execute($result)) 
@@ -75,10 +98,10 @@
                 $id_cidade = $row['ID_CIDADE'];
             
                 print '<tr>';
-                print "<td><a href='pessoa_form_edit.php?id={$id}'>
+                print "<td><a href='pessoa_form.php?action=edit&id={$id}'>
                             <img src='images/edit.svg' style='width:17px'>
                            </a></td>";
-                print "<td><a href='pessoa_delete.php?id={$id}'>
+                print "<td><a href='pessoa_list.php?action=delete&id={$id}'>
                             <img src='images/remove.svg' style='width:17px'>
                            </a></td>";
                 print "<td> {$id} </td>";
@@ -96,7 +119,7 @@
             ?>
         </tbody>
     </table> 
-    <button onclick="window.location='pessoa_form_insert.php'">
+    <button onclick="window.location='pessoa_form.php'">
         <img src="images/insert.svg" style="width: 17px;">Inserir
     </button>       
 </body>
