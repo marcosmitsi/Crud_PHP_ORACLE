@@ -1,50 +1,57 @@
 <?php
 
-require_once 'bd/pessoa_db.php';
+require_once 'classes/Pessoa.php';
+require_once 'classes/Cidades.php';
 
 $pessoa = [];
-$pessoa['id'] = '';
-$pessoa['nome'] = '';
-$pessoa['endereco'] = '';
-$pessoa['bairro'] = '';
-$pessoa['telefone'] = '';
-$pessoa['email'] = '';
-$pessoa['id_cidade'] = '';
+$pessoa['ID'] = '';
+$pessoa['NOME'] = '';
+$pessoa['ENDERECO'] = '';
+$pessoa['BAIRRO'] = '';
+$pessoa['TELEFONE'] = '';
+$pessoa['EMAIL'] = '';
+$pessoa['ID_CIDADE'] = '';
 
 
 if (!empty($_REQUEST['action'])) {
 
+    try {
+        if ($_REQUEST['action'] == 'edit') {
 
-    if ($_REQUEST['action'] == 'edit') {
-
-        if (isset($_GET['id']) && !empty($_GET['id'])) {
+            if (isset($_GET['id']) && !empty($_GET['id'])) {
 
 
 
-            $id = (int) $_GET['id']; //Obtendo o ID:
-            $pessoa = get_pessoa($id);
+                $id = (int) $_GET['id']; //Obtendo o ID:
+                $pessoa = Pessoa::find($id);
+                
 
-        }
-    } elseif ($_REQUEST['action'] == 'save') {
-        $id = isset($_POST['id']) ? $_POST['id'] : '';
-        $pessoa = $_POST;
+            }
+        } elseif ($_REQUEST['action'] == 'save') {
+            $id = isset($_POST['id']) ? $_POST['id'] : '';
+            $pessoa = $_POST;
 
-        if (empty($_POST['id'])) {
-            $pessoa['id'] = get_next_pessoa();
-            $result = insert_pessoa($pessoa);
-            echo "<script>alert('Registro alterado com sucesso!')</script>";
-            echo "<script>window.location ='pessoa_list.php';</script>";
+            Pessoa::save($pessoa);
 
-        } else {
-            $result = update_pessoa($pessoa);
-            echo "<script>alert('Registro alterado com sucesso!')</script>";
+
+            echo "<script>alert('Salvo com sucesso!')</script>";
             echo "<script>window.location ='pessoa_list.php';</script>";
         }
+
+    } catch (Exception $e) {
+        echo $e->getMessage();
     }
 }
 
-require_once 'lista_combo_cidades.php';
-$cidades = lista_combo_cidade($pessoa['ID_CIDADE'] ?? '');
+$cidades = '';
+foreach(Cidades::all() as $cidade)
+{
+    $id = $cidade['ID'];
+    $nome = $cidade['NOME'];
+    $check = ($cidade['ID'] == $pessoa['ID_CIDADE']) ? 'selected = 1' : '';
+    $cidades .= "<option {$check} value='{$id}'>{$nome}</option>";
+
+}
 
 $form = file_get_contents('html/form.html');
 $form = str_replace('{id}', $pessoa['ID'] ?? '', $form);

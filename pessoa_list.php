@@ -1,34 +1,42 @@
 <?php
-require_once'bd/pessoa_db.php';
+require_once 'classes/Pessoa.php';
 
+try{
 
 if (!empty($_GET['action']) && $_GET['action'] == 'delete') {
     $id = (int) $_GET['id'];
-    exclui_pessoa($id);
-        echo "<script>alert('Registro excluído com sucesso!');</script>";
-        echo "<script>window.location='pessoa_list.php';</script>"; // Após excluir, a página recarrega para refletir a mudança.
-   
-}
-    $pessoas = lista_pessoas();
+    Pessoa::delete($id);
 
-$items ='';
+    echo "<script>alert('Registro excluído com sucesso!');</script>";
+    echo "<script>window.location='pessoa_list.php';</script>"; // Após excluir, a página recarrega para refletir a mudança.
+
+}
+$pessoas = Pessoa::all();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage();
+
+}
+
+$items = '';
 // Busca os dados corretamente
 
-if($pessoas){
+if ($pessoas) {
     foreach ($pessoas as $pessoa) {
         //Dessa forma, se o valor for null, ele não tentará convertê-lo
-           
-    $item = file_get_contents('html/item.html');
-    $item = str_replace('{id}',        $pessoa['ID'],        $item);
-    $item = str_replace('{nome}',      $pessoa['NOME'],      $item);
-    $item = str_replace('{endereco}',  $pessoa['ENDERECO'],  $item);
-    $item = str_replace('{bairro}',    $pessoa['BAIRRO'],    $item);
-    $item = str_replace('{telefone}',  $pessoa['TELEFONE'],  $item);
-    $item = str_replace('{email}',     $pessoa['EMAIL'],     $item);
-    $item = str_replace('{id_cidade}', $pessoa['ID_CIDADE'], $item);
 
-    $items .= $item;  
-}
+        $item = file_get_contents('html/item.html');
+        $item = str_replace('{id}', $pessoa['ID'], $item);
+        $item = str_replace('{nome}', $pessoa['NOME'], $item);
+        $item = str_replace('{endereco}', $pessoa['ENDERECO'], $item);
+        $item = str_replace('{bairro}', $pessoa['BAIRRO'], $item);
+        $item = str_replace('{telefone}', $pessoa['TELEFONE'], $item);
+        $item = str_replace('{email}', $pessoa['EMAIL'], $item);
+        $item = str_replace('{id_cidade}', $pessoa['ID_CIDADE'], $item);
+
+        $items .= $item;
+    }
 
 }
 
