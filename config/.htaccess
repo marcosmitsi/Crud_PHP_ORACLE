@@ -1,0 +1,4 @@
+# Bloqueia o acesso total a esta pasta
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
