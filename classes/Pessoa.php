@@ -3,103 +3,107 @@
 class Pessoa
 {
     private static $conn;
-    public static function getConnection()
+    private static function getConnection(): PDO
     {
+        $ini          = parse_ini_file('./config/xe.ini');
+        $host         = $ini['host'];
+        $porta        = $ini['porta'];
+        $service      = $ini['servicename'];
+        $usuario      = $ini['usuario'];
+        $senha        = $ini['senha'];
+        $dsn          = "oci:dbname=//$host:$porta/$service;charset=UTF8";
 
-        $ini = parse_ini_file('./config/xe.ini');
-
-        $host = $ini['host'];  // IP do servidor Oracle
-        $porta = $ini['porta'];          // Porta padrão do Oracle
-        $servicename = $ini['servicename'];      // Nome do serviço ou SID
-        $usuario = $ini['usuario']; // Usuário do banco
-        $senha = $ini['senha'];     // Senha do banco
-
-        // DSN (Data Source Name) para Oracle com Service Name
-        $dsn = "oci:dbname=//$host:$porta/$servicename;charset=UTF8";
-
-
-
-        // Criando a conexão PDO
         if (empty(self::$conn)) {
-            self::$conn = new PDO($dsn, $usuario, $senha, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Ativar erros como exceções
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // Retornar arrays associativos
-
-            ]);
+            self::$conn = new PDO(
+                $dsn,
+                $usuario,
+                $senha,
+                [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_CASE               => PDO::CASE_LOWER,   // <<< chave em minúsculas
+                ]
+            );
         }
-
         return self::$conn;
-
-
     }
-    public static function find($id)
+
+    /* ------------------------------------------------------------------
+     * 2. BUSCAR UMA PESSOA
+     * ------------------------------------------------------------------*/
+    public static function find(int $id): ?array
     {
-        $conn = self::getConnection();
-        $result = $conn->prepare("SELECT * FROM pessoa WHERE id = :id");
-        $result->execute([':id' => $id]);
-        return $result->fetch();
+        $sql  = 'SELECT id, nome, endereco, bairro,
+                        telefone, email, id_cidade
+                 FROM   pessoa
+                 WHERE  id = :id';
 
+        $stmt = self::getConnection()->prepare($sql);
+        $stmt->execute([':id' => $id]);
 
+        return $stmt->fetch() ?: null;   // null caso não exista
     }
 
-    public static function delete($id)
+    /* ------------------------------------------------------------------
+     * 3. LISTAR TODAS AS PESSOAS
+     * ------------------------------------------------------------------*/
+    public static function all(): array
     {
-        $conn = self::getConnection();
-        $result = $conn->prepare("DELETE FROM pessoa WHERE id = :id");
-        $result->execute([':id' => $id]);
-        return $result;
+        $sql = 'SELECT id, nome, endereco, bairro,
+                       telefone, email, id_cidade
+                FROM   pessoa
+                ORDER  BY id';
 
-
+        return self::getConnection()->query($sql)->fetchAll();
     }
 
-    public static function all()
+    /* ------------------------------------------------------------------
+     * 4. EXCLUIR
+     * ------------------------------------------------------------------*/
+    public static function delete(int $id): bool
     {
-
-        $conn = self::getConnection();
-        $result = $conn->query("SELECT * FROM pessoa ORDER BY id");
-        return $result->fetchAll();
-
-
+        $sql  = 'DELETE FROM pessoa WHERE id = :id';
+        $stmt = self::getConnection()->prepare($sql);
+        return $stmt->execute([':id' => $id]);
     }
 
-    public static function save($pessoa)
+    /* ------------------------------------------------------------------
+     * 5. INSERIR / ATUALIZAR
+     * ------------------------------------------------------------------*/
+    public static function save(array &$pessoa): void
     {
         $conn = self::getConnection();
 
         if (empty($pessoa['id'])) {
-            $result = $conn->query("SELECT MAX(id) AS NEXT FROM pessoa");
-            $row = $result->fetch();
-            $pessoa['id'] = (int) $row['NEXT'] + 1;
-            $sql = "INSERT INTO PESSOA (id, nome, endereco, bairro, telefone, email, id_cidade)
-                        VALUES(:id, :nome, :endereco, :bairro, :telefone, :email, :id_cidade)";
+            // gera próximo ID (pode trocar por SEQUENCE se preferir)
+            $maxId  = $conn->query('SELECT NVL(MAX(id),0)+1 AS prox FROM pessoa')
+                           ->fetch()['prox'];
+            $pessoa['id'] = $maxId;
 
+            $sql = 'INSERT INTO pessoa
+                       (id, nome, endereco, bairro, telefone, email, id_cidade)
+                    VALUES
+                       (:id, :nome, :endereco, :bairro, :telefone, :email, :id_cidade)';
         } else {
-            $sql = "UPDATE PESSOA SET     nome      = :nome,
-                                          endereco  = :endereco,
-                                          bairro    = :bairro,
-                                          telefone  = :telefone,
-                                          email     = :email,
-                                          id_cidade = :id_cidade
-                                    WHERE id        = :id";
-
+            $sql = 'UPDATE pessoa SET
+                        nome      = :nome,
+                        endereco  = :endereco,
+                        bairro    = :bairro,
+                        telefone  = :telefone,
+                        email     = :email,
+                        id_cidade = :id_cidade
+                    WHERE id = :id';
         }
 
-        $result = $conn->prepare($sql);
-        $result->execute([
-            ':id' => $pessoa['id'],
-            ':nome' => $pessoa['nome'],
-            ':endereco' => $pessoa['endereco'],
-            ':bairro' => $pessoa['bairro'],
-            ':telefone' => $pessoa['telefone'],
-            ':email' => $pessoa['email'],
-            ':id_cidade' => $pessoa['id_cidade']
-
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id'        => $pessoa['id'],
+            ':nome'      => $pessoa['nome'],
+            ':endereco'  => $pessoa['endereco'],
+            ':bairro'    => $pessoa['bairro'],
+            ':telefone'  => $pessoa['telefone'],
+            ':email'     => $pessoa['email'],
+            ':id_cidade' => $pessoa['id_cidade'],
         ]);
-
-
-
     }
-
-
-
 }
